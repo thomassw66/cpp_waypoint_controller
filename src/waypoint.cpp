@@ -1,9 +1,6 @@
 #include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include <turtlesim/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
-#include <tf/transform_datatypes.h>
 #include <geometry_msgs/Quaternion.h>
 #include "boost/thread/thread.hpp"
 #include <math.h>
@@ -96,7 +93,7 @@ void WaypointController::run()
         cmd_vel_pub.publish(cmd_vel_msg);                
     } else if (dist > 0.15) { // check to see if we are not within 0.3 of our waypoint 
         geometry_msgs::Twist cmd_vel_msg;
-        cmd_vel_msg.linear.x = 0.1;
+        cmd_vel_msg.linear.x = 0.2;
         // cmd_vel_msg.angular.z = vel_direction * vel_magnitude ; // turn slightly slower
         cmd_vel_pub.publish(cmd_vel_msg);
     } else {
