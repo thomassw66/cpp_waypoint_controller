@@ -4,6 +4,8 @@
 int main(int argc, char * argv[])
 {
     ros::init(argc, argv, "waypoint_server");
+    std::string turtle_name = "";
+    // ROS_INFO("%s %s", argv[0], argv[1]);
     ros::NodeHandle n;
     ros::Publisher pub = n.advertise<geometry_msgs::Twist>("waypoint", 1000);
     ros::Rate loop_rate(1000);

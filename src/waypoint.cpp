@@ -60,10 +60,10 @@ WaypointController::WaypointController(std::string turtle_name):
     ph() 
 {
 
-    cmd_vel_pub = ph.advertise<geometry_msgs::Twist>(turtle_name + "/cmd_vel", 1000);
+    cmd_vel_pub = ph.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
     // pose_sub = nh.subscribe(turtle_name+"/pose", 10, &WaypointController::pose_callback, this);
-    waypoint_sub = nh.subscribe(turtle_name + "/waypoint", 10, &WaypointController::waypoint_update_callback, this);
-    pose_sub = nh.subscribe(turtle_name + "/odom", 10, &WaypointController::pose_callback, this);
+    waypoint_sub = nh.subscribe("waypoint", 10, &WaypointController::waypoint_update_callback, this);
+    pose_sub = nh.subscribe("odom", 10, &WaypointController::pose_callback, this);
 
     timer = nh.createTimer(ros::Duration(0.1), boost::bind(&WaypointController::run, this));
 }
@@ -84,19 +84,20 @@ void WaypointController::run()
     if (diff_angle < 0) diff_angle = -diff_angle;
     if (2.0*M_PI - diff_angle < diff_angle) diff_angle = 2.0*M_PI - diff_angle;
     ROS_INFO("pose_theta: %f theta: %f diff_angle: %f M_PI: %f", pose_theta, theta, diff_angle, M_PI);
-            
-    if (diff_angle > 0.03) { // check if we are facing our waypoint 
-        double vel_magnitude = diff_angle;
-        double vel_direction = (pose_theta > theta) ? 
+    // in case we
+    double vel_magnitude = diff_angle;
+    double vel_direction = (pose_theta > theta) ? 
                             ((pose_theta - theta > theta - pose_theta + 2*M_PI) ? 1: -1) : 
                             ((theta - pose_theta > pose_theta - theta + 2*M_PI) ? -1: 1) ;
-
+            
+    if (diff_angle > 0.1) { // check if we are facing our waypoint 
         geometry_msgs::Twist cmd_vel_msg;
         cmd_vel_msg.angular.z = vel_direction * vel_magnitude;
         cmd_vel_pub.publish(cmd_vel_msg);                
-    } else if (dist > 0.3) { // check to see if we are not within 0.3 of our waypoint 
+    } else if (dist > 0.15) { // check to see if we are not within 0.3 of our waypoint 
         geometry_msgs::Twist cmd_vel_msg;
-        cmd_vel_msg.linear.x = dist;
+        cmd_vel_msg.linear.x = 0.1;
+        // cmd_vel_msg.angular.z = vel_direction * vel_magnitude ; // turn slightly slower
         cmd_vel_pub.publish(cmd_vel_msg);
     } else {
         cmd_vel_pub.publish(*new geometry_msgs::Twist());
@@ -105,26 +106,19 @@ void WaypointController::run()
 }
 
 void WaypointController::pose_callback(const nav_msgs::Odometry::ConstPtr& odom_msg)
-// void WaypointController::pose_callback(const turtlesim::PoseConstPtr& msg)
 {
-    // ROS_INFO("my x: %f my y: %f \t theta: %f", msg->x, msg->y, msg->theta);
-    // boost::mutex::scoped_lock(pose_mutex);
-    // pose_x = msg->x;    
-    // pose_y = msg->y;
-    // pose_theta = msg->theta;
-    // if (pose_theta < 0.0) pose_theta += 2.0* M_PI; 
-    // pose_ready = true;
     boost::mutex::scoped_lock(pose_mutex);
     pose_x = odom_msg->pose.pose.position.x;
     pose_y = odom_msg->pose.pose.position.y;
+    // orientation comes in quaternions and we need euler angles (but our rotation is fixed in the xy plane)
     geometry_msgs::Quaternion q = odom_msg->pose.pose.orientation;
     double siny = 2.0 * (q.w * q.z + q.x * q.y);
     double cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
     pose_theta = atan2(siny, cosy);
-    // convert to radians???
+    // convert to radians??? why not right???
     if (pose_theta < 0.0) pose_theta += 2.0 * M_PI;
     pose_ready = true;
-    ROS_INFO("pose_x: %f, pose_y: %f, pose_theta: %f", pose_x, pose_y, pose_theta);
+    ///ROS_INFO("pose_x: %f, pose_y: %f, pose_theta: %f", pose_x, pose_y, pose_theta);
 }
 
 void WaypointController::waypoint_update_callback(const geometry_msgs::Twist::ConstPtr & next_waypoint)
@@ -138,7 +132,7 @@ void WaypointController::waypoint_update_callback(const geometry_msgs::Twist::Co
 int main(int argc, char ** argv) 
 { 
     ros::init(argc, argv, "waypoint_node");
+    // ROS_INFO("%s %s %s", argv[0], argv[1], argv[2]);
     WaypointController control("");
-    
     ros::spin();   
 }
