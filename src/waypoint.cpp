@@ -93,7 +93,7 @@ void WaypointController::run()
         cmd_vel_pub.publish(cmd_vel_msg);                
     } else if (dist > 0.15) { // check to see if we are not within 0.3 of our waypoint 
         geometry_msgs::Twist cmd_vel_msg;
-        cmd_vel_msg.linear.x = 0.2;
+        cmd_vel_msg.linear.x = 0.4;
         // cmd_vel_msg.angular.z = vel_direction * vel_magnitude ; // turn slightly slower
         cmd_vel_pub.publish(cmd_vel_msg);
     } else {
